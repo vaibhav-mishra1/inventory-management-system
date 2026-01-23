@@ -1,0 +1,3 @@
+uvicorn app.main:app --reload  -> command to run server
+
+git rm -r --cached .venv  -> if i have run git add . and commited .venv  -> command to unstage
