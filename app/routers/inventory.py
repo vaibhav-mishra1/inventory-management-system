@@ -6,7 +6,11 @@ from app.database.session import SessionLocal, get_db
 from app.models.item import Item
 from app.models.category import Category
 from app.models.transaction import StockTransaction
-from app.schemas.transaction import StockTransactionCreate, StockTransactionResponse
+from app.schemas.transaction import (
+    StockTransactionCreate,
+    StockTransactionResponse,
+    StockInOutRequest
+)
 
 router = APIRouter(
     prefix="/inventory",
@@ -31,7 +35,7 @@ def update_category_totals(category_id: int, db: Session):
 
 @router.post("/stock-in", response_model=StockTransactionResponse)
 def stock_in(
-    data: StockTransactionCreate,
+    data: StockInOutRequest,
     db: Session = Depends(get_db)
 ):
     if data.quantity <= 0:
@@ -62,7 +66,7 @@ def stock_in(
 
 @router.post("/stock-out", response_model=StockTransactionResponse)
 def stock_out(
-    data: StockTransactionCreate,
+    data: StockInOutRequest,
     db: Session = Depends(get_db)
 ):
     if data.quantity <= 0:
@@ -99,14 +103,62 @@ def stock_out(
 
 @router.get("/transactions", response_model=list[StockTransactionResponse])
 def get_transactions(db: Session = Depends(get_db)):
-    return db.query(StockTransaction).order_by(
-        StockTransaction.timestamp.desc()
-    ).all()
+    transactions = (
+        db.query(
+            StockTransaction,
+            Item.name.label("item_name"),
+            Category.name.label("category_name")
+        )
+        .join(Item, StockTransaction.item_id == Item.id)
+        .join(Category, Item.category_id == Category.id)
+        .order_by(StockTransaction.timestamp.desc())
+        .all()
+    )
+    
+    # Build response with joined data
+    result = []
+    for tx, item_name, category_name in transactions:
+        result.append({
+            "id": tx.id,
+            "item_id": tx.item_id,
+            "item_name": item_name,
+            "category_name": category_name,
+            "transaction_type": tx.transaction_type,
+            "quantity": tx.quantity,
+            "timestamp": tx.timestamp
+        })
+    
+    return result
 
 @router.get("/low-stock")
 def low_stock_items(threshold: int = 5, db: Session = Depends(get_db)):
-    items = db.query(Item).filter(Item.stock < threshold).all()
-    return items
+    items = (
+        db.query(
+            Item.id.label("id"),
+            Item.name.label("name"),
+            Item.stock.label("stock"),
+            Item.price_per_unit.label("price_per_unit"),
+            Category.name.label("category_name"),
+            Category.id.label("category_id")
+        )
+        .join(Category, Item.category_id == Category.id)
+        .filter(Item.stock < threshold)
+        .all()
+    )
+    
+    # Convert to dict format with proper field names
+    result = []
+    for item in items:
+        result.append({
+            "id": item.id,
+            "name": item.name,
+            "stock": item.stock,
+            "price_per_unit": item.price_per_unit,
+            "category_name": item.category_name,
+            "category_id": item.category_id
+        })
+    
+    return result
 
 @router.get("/dashboard")
 def dashboard(db: Session = Depends(get_db)):
@@ -114,11 +166,17 @@ def dashboard(db: Session = Depends(get_db)):
     total_items = db.query(Item).count()
 
     total_stock = db.query(func.sum(Item.stock)).scalar() or 0
-    total_amount = db.query(func.sum(Item.stock * Item.price_per_unit)).scalar() or 0.0
+    total_inventory_value = db.query(
+        func.sum(Item.stock * Item.price_per_unit)
+    ).scalar() or 0.0
+
+    # Count items with stock below threshold (default 5)
+    low_stock_count = db.query(Item).filter(Item.stock < 5).count()
 
     return {
         "total_categories": total_categories,
         "total_items": total_items,
         "total_stock": total_stock,
-        "total_amount": total_amount
+        "total_inventory_value": total_inventory_value,
+        "low_stock_count": low_stock_count
     }

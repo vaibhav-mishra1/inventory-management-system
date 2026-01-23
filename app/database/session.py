@@ -1,7 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from app.core.config import DATABASE_URL
 
-DATABASE_URL = "postgresql://postgres:%402006_Vaibhav@localhost/IMS"
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL is not loaded from environment variables")
 
 engine = create_engine(DATABASE_URL)
 

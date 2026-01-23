@@ -8,7 +8,13 @@ from app.schemas.user import UserLogin, UserResponse, UserCreate
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Use a PBKDF2-based scheme to avoid direct bcrypt dependency issues and
+# the 72-byte password length limit. For a college project this is
+# perfectly acceptable and keeps the implementation simple.
+pwd_context = CryptContext(
+    schemes=["pbkdf2_sha256"],
+    deprecated="auto",
+)
 
 def verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
