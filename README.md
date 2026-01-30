@@ -134,7 +134,7 @@ Before you begin, ensure you have the following installed on your system:
 #### 1. Clone the Repository
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/vaibhav-mishra1/inventory-management-system.git
 cd IMS
 ```
 
@@ -388,9 +388,6 @@ For production, consider using environment variables:
 ```bash
 # Backend (.env)
 DATABASE_URL=postgresql://user:password@localhost:5432/inventory_db
-SECRET_KEY=your-secret-key-here
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
 
 # Frontend (.env)
 VITE_API_BASE_URL=http://127.0.0.1:8000
