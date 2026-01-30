@@ -15,5 +15,10 @@ class Item(Base):
     price_per_unit = Column(Float, nullable=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    stock_transactions = relationship(
+        "StockTransaction",
+        back_populates="item",
+        cascade="all, delete-orphan" 
+    )
 
     category = relationship("Category", backref="items")
