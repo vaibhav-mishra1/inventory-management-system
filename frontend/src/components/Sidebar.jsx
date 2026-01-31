@@ -6,8 +6,8 @@ import '../styles/sidebar.css';
 const Sidebar = () => {
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login', { replace: true });
   };
 

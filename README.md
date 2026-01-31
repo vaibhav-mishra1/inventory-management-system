@@ -15,7 +15,8 @@ The **Inventory Management System** is a comprehensive solution designed to help
 
 ### Key Features
 
-- 🔐 **User Authentication** - Secure login and registration with JWT-based authentication
+- 🔐 **User Authentication** - Secure login and registration with JWT + OAuth2 (access & refresh tokens, token rotation)
+- 🛡️ **Role-Based Access Control** - Endpoint-level permissions based on user roles (admin, staff)
 - 📊 **Dashboard Analytics** - Real-time overview of inventory metrics, total value, and low-stock alerts
 - 📁 **Category Management** - Organize items into logical categories with automatic stock calculation
 - 🏷️ **Item Management** - Add, edit, and delete items with stock tracking and pricing
@@ -33,6 +34,7 @@ The **Inventory Management System** is a comprehensive solution designed to help
 - **PostgreSQL** - Robust relational database
 - **SQLAlchemy** - ORM for database operations
 - **Passlib** - Password hashing and security
+- **python-jose** - JWT token creation and validation
 - **Pydantic** - Data validation using Python type annotations
 
 ### Frontend
@@ -58,6 +60,7 @@ IMS/
 │   │   └── session.py          # Database session management
 │   ├── models/                  # SQLAlchemy models
 │   │   ├── user.py             # User model
+│   │   ├── refresh_token.py     # Refresh token model (JWT)
 │   │   ├── category.py         # Category model
 │   │   ├── item.py             # Item model
 │   │   └── transaction.py      # Transaction model
@@ -68,13 +71,16 @@ IMS/
 │   │   └── inventory.py       # Stock operations & analytics
 │   ├── schemas/                 # Pydantic schemas
 │   │   ├── user.py             # User request/response schemas
+│   │   ├── auth.py             # Auth token schemas
 │   │   ├── category.py         # Category schemas
 │   │   ├── item.py             # Item schemas
 │   │   └── transaction.py      # Transaction schemas
-│   └── services/                # Business logic layer
-│       ├── category_service.py
-│       ├── item_service.py
-│       └── inventory_service.py
+│   ├── services/                # Business logic layer
+│   │   ├── category_service.py
+│   │   ├── item_service.py
+│   │   └── inventory_service.py
+│   └── utils/                   # Utilities
+│       └── auth_service.py      # Refresh token storage & validation
 │
 └── frontend/                     # Frontend application
     ├── src/
@@ -295,7 +301,9 @@ The frontend will be available at: `http://localhost:5173`
 
 ### Authentication
 - `POST /auth/register` - Register new user
-- `POST /auth/login` - Login user (returns token)
+- `POST /auth/login` - Login user (returns access + refresh tokens)
+- `POST /auth/refresh` - Refresh access token using refresh token
+- `POST /auth/logout` - Logout and revoke refresh token
 
 ### Categories
 - `GET /categories` - Get all categories
@@ -318,14 +326,17 @@ The frontend will be available at: `http://localhost:5173`
 - `GET /inventory/low-stock` - Get low stock items
 - `GET /inventory/dashboard` - Get dashboard statistics
 
-**Note**: All endpoints except `/auth/register` and `/auth/login` require authentication via Bearer token in the Authorization header.
+**Note**: All endpoints except `/auth/register`, `/auth/login`, `/auth/refresh`, and `/auth/logout` require authentication via Bearer token in the Authorization header.
 
 ---
 
 ## 🔒 Security Features
 
 - **Password Hashing**: Uses PBKDF2-SHA256 for secure password storage
-- **JWT Authentication**: Token-based authentication for API access
+- **JWT + OAuth2 Authentication**: Access tokens (short-lived) and refresh tokens (long-lived) with automatic rotation
+- **Refresh Token Storage**: Refresh tokens stored in database with revocation support for secure logout
+- **Token Rotation**: Each refresh exchanges for new tokens; old refresh token is revoked
+- **Role-Based Access Control (RBAC)**: API endpoints are protected by user roles (e.g. admin, staff). Sensitive operations like category management require admin, while stock operations allow admin and staff.
 - **CORS Protection**: Configured CORS middleware for secure cross-origin requests
 - **Input Validation**: Pydantic schemas validate all API inputs
 - **SQL Injection Protection**: SQLAlchemy ORM prevents SQL injection attacks
@@ -388,6 +399,7 @@ For production, consider using environment variables:
 ```bash
 # Backend (.env)
 DATABASE_URL=postgresql://user:password@localhost:5432/inventory_db
+SECRET_KEY=your-secret-key-for-jwt-signing  # Required for JWT + OAuth2
 
 # Frontend (.env)
 VITE_API_BASE_URL=http://127.0.0.1:8000
@@ -423,7 +435,7 @@ VITE_API_BASE_URL=http://127.0.0.1:8000
 
 ## 📄 License
 
-This project is created for educational purposes as a college project.
+This project is created for educational and learning purposes as a college project.
 
 ---
 

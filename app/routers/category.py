@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.models.category import Category
 from app.schemas.category import CategoryCreate, CategoryUpdate, CategoryResponse
 from app.database.session import SessionLocal, get_db
+from app.core.security import require_role
 
 router = APIRouter(
     prefix="/categories",
@@ -12,7 +13,9 @@ router = APIRouter(
 
 # CREATE Category
 @router.post("/", response_model=CategoryResponse)
-def create_category(category: CategoryCreate, db: Session = Depends(get_db)):
+def create_category(category: CategoryCreate,
+                    user = Depends(require_role(["admin"])),
+                    db: Session = Depends(get_db)):
     existing = db.query(Category).filter(Category.name == category.name).first()
     if existing:
         raise HTTPException(status_code=400, detail="Category already exists")
@@ -26,7 +29,10 @@ def create_category(category: CategoryCreate, db: Session = Depends(get_db)):
 
 # READ All Categories
 @router.get("/", response_model=list[CategoryResponse])
-def get_categories(db: Session = Depends(get_db)):
+def get_categories(
+    # user=Depends(require_role(["admin", "staff", "viewer"])),
+    db: Session = Depends(get_db)
+):
     return db.query(Category).all()
 
 # READ Category by ID
@@ -42,6 +48,7 @@ def get_category(category_id: int, db: Session = Depends(get_db)):
 def update_category(
     category_id: int,
     category_data: CategoryUpdate,
+    user = Depends(require_role(["admin"])),
     db: Session = Depends(get_db)
 ):
     category = db.query(Category).filter(Category.id == category_id).first()
@@ -57,7 +64,9 @@ def update_category(
 
 # DELETE category
 @router.delete("/{category_id}")
-def delete_category(category_id: int, db: Session = Depends(get_db)):
+def delete_category(category_id: int,
+                    user = Depends(require_role(["admin"])),
+                    db: Session = Depends(get_db)):
     category = db.query(Category).filter(Category.id == category_id).first()
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")

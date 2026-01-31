@@ -5,7 +5,7 @@ import logging
 from app.routers import category as category_router, item as item_router, inventory as inventory_router, auth as auth_router
 from app.database.session import engine
 from app.database.base import Base
-from app.models import category, item, transaction, user
+from app.models import category, item, refresh_token, transaction, user
 
 logger = logging.getLogger(__name__)
 

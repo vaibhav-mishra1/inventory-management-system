@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
+from app.core.security import get_current_user
 from app.database.session import SessionLocal, get_db
 from app.models.item import Item
 from app.models.category import Category
@@ -11,6 +12,7 @@ from app.schemas.transaction import (
     StockTransactionResponse,
     StockInOutRequest
 )
+from app.core.security import require_role
 
 router = APIRouter(
     prefix="/inventory",
@@ -36,6 +38,7 @@ def update_category_totals(category_id: int, db: Session):
 @router.post("/stock-in", response_model=StockTransactionResponse)
 def stock_in(
     data: StockInOutRequest,
+    user=Depends(require_role(["admin", "staff"])),
     db: Session = Depends(get_db)
 ):
     if data.quantity <= 0:
@@ -67,6 +70,7 @@ def stock_in(
 @router.post("/stock-out", response_model=StockTransactionResponse)
 def stock_out(
     data: StockInOutRequest,
+    user=Depends(require_role(["admin", "staff"])),
     db: Session = Depends(get_db)
 ):
     if data.quantity <= 0:
@@ -161,7 +165,8 @@ def low_stock_items(threshold: int = 5, db: Session = Depends(get_db)):
     return result
 
 @router.get("/dashboard")
-def dashboard(db: Session = Depends(get_db)):
+def dashboard(current_user: dict = Depends(get_current_user),
+              db: Session = Depends(get_db)):
     total_categories = db.query(Category).count()
     total_items = db.query(Item).count()
 
@@ -178,5 +183,7 @@ def dashboard(db: Session = Depends(get_db)):
         "total_items": total_items,
         "total_stock": total_stock,
         "total_inventory_value": total_inventory_value,
-        "low_stock_count": low_stock_count
+        "low_stock_count": low_stock_count,
+        "message": "Secure inventory dashboard",
+        "user": current_user["sub"]
     }
