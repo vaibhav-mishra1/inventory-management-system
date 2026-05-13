@@ -20,6 +20,7 @@ except Exception as e:
 app = FastAPI(title="Inventory Management System")
 
 origins = [
+    "https://inventory-management-system-kavaibhav100-4708s-projects.vercel.app",
     "https://inventory-management-system-kavaibhav100-4708s-projects.vercel.app"
 ]
 
