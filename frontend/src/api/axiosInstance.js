@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { refreshAccessToken } from '../services/authService.js';
 
-const BASE_URL = 'http://127.0.0.1:8000';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
 // Simple helper to check if JWT is expired.
 // If the token is not a well-formed JWT (no 3 parts), we treat it as
