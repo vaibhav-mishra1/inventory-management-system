@@ -19,9 +19,13 @@ except Exception as e:
 
 app = FastAPI(title="Inventory Management System")
 
+origins = [
+    "https://inventory-management-system-kavaibhav100-4708s-projects.vercel.app"
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
