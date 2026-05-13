@@ -21,7 +21,7 @@ app = FastAPI(title="Inventory Management System")
 
 origins = [
     "https://inventory-management-system-kavaibhav100-4708s-projects.vercel.app",
-    "https://inventory-management-system-kavaibhav100-4708s-projects.vercel.app"
+    "https://inventory-management-system-j2q11vb6s.vercel.app"
 ]
 
 app.add_middleware(
