@@ -1,10 +1,10 @@
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
-from app.core.config import REFRESH_TOKEN_EXPIRE_DAYS
+from app.core.config import REFRESH_TOKEN_EXPIRE_DAYS, ADMIN_CREATION_TOKEN
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -148,6 +148,33 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     )
 
     # Save to PostgreSQL
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    return new_user
+
+
+@router.post("/register-admin", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+def register_admin(
+    user: UserCreate,
+    admin_token: str | None = Header(default=None, alias="X-Admin-Create-Token"),
+    db: Session = Depends(get_db),
+):
+    if not ADMIN_CREATION_TOKEN or admin_token != ADMIN_CREATION_TOKEN:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid admin creation token")
+
+    existing_user = db.query(User).filter(User.username == user.username).first()
+    if existing_user:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already registered")
+
+    hashed_password = get_password_hash(user.password)
+    new_user = User(
+        username=user.username,
+        password_hash=hashed_password,
+        role="admin",
+    )
+
     db.add(new_user)
     db.commit()
     db.refresh(new_user)

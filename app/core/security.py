@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from typing import cast
 from jose import jwt, JWTError
 import uuid
 from fastapi import Depends, HTTPException, status
@@ -37,7 +38,7 @@ def create_access_token(
     token = jwt.encode(
         payload,
         SECRET_KEY, # pyright: ignore[reportArgumentType]
-        algorithm=ALGORITHM
+        algorithm=cast(str, ALGORITHM)
     )
 
     return token
@@ -47,7 +48,7 @@ def decode_access_token(token: str) -> dict:
         payload = jwt.decode(
             token,
             SECRET_KEY, # type: ignore
-            algorithms=[ALGORITHM],
+            algorithms=[cast(str, ALGORITHM)],
             audience=JWT_AUDIENCE,
             issuer=JWT_ISSUER
         )
@@ -99,7 +100,7 @@ def create_refresh_token(*, user_id: int) -> tuple[str, str]:
     token = jwt.encode(
         payload,
         SECRET_KEY,  # type: ignore
-        algorithm=ALGORITHM,
+        algorithm=cast(str, ALGORITHM),
     )
 
     return token, jti
@@ -111,7 +112,7 @@ def decode_refresh_token(token: str) -> dict:
         payload = jwt.decode(
             token,
             SECRET_KEY,  # type: ignore
-            algorithms=[ALGORITHM],
+            algorithms=[cast(str, ALGORITHM)],
         )
         if payload.get("type") != "refresh":
             raise HTTPException(
